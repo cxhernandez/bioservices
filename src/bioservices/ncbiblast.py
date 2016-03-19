@@ -5,8 +5,8 @@
 #
 #  Copyright (c) 2013-2014 - EMBL-EBI
 #
-#  File author(s): 
-#      
+#  File author(s):
+#
 #
 #  Distributed under the GPLv3 License.
 #  See accompanying file LICENSE.txt or copy at
@@ -77,13 +77,15 @@ class NCBIblast(REST):
 
     _url = "http://www.ebi.ac.uk/Tools/services/rest/ncbiblast"
     _sequence_example = "MDSTNVRSGMKSRKKKPKTTVIDDDDDCMTCSACQSKLVKISDITKVSLDYINTMRGNTLACAACGSSLKLLNDFAS"
+
     def __init__(self, verbose=True):
         """.. rubric:: NCBIblast constructor
 
         :param bool verbose: prints informative messages
 
         """
-        super(NCBIblast, self).__init__(name="NCBIblast", url=NCBIblast._url, verbose=verbose)
+        super(NCBIblast, self).__init__(
+            name="NCBIblast", url=NCBIblast._url, verbose=verbose)
         self._parameters = None
         self._parametersDetails = {}
 
@@ -94,7 +96,7 @@ class NCBIblast(REST):
 
         ::
 
-            >>> from bioservices import ncbiblast 
+            >>> from bioservices import ncbiblast
             >>> n = ncbiblast.NCBIblast()
             >>> res = n.getParameters()
             >>> [x.text for x in res.findAll("id")]
@@ -137,7 +139,8 @@ returns a list of parameters. See :meth:`getParameters`.""")
 
         """
         if parameterId not in self.parameters:
-            raise ValueError("Invalid parameterId provided(%s). See parameters attribute" % parameterId)
+            raise ValueError(
+                "Invalid parameterId provided(%s). See parameters attribute" % parameterId)
 
         if parameterId not in self._parametersDetails.keys():
             request = "parameterdetails/" + parameterId
@@ -146,15 +149,18 @@ returns a list of parameters. See :meth:`getParameters`.""")
             self._parametersDetails[parameterId] = res
 
         try:
-            # try to interpret the content to return a list of values instead of the XML
-            res = [x for x in self._parametersDetails[parameterId].findAll("value")]
-            res = [y[0].text for y in [x.findAll('label') for x in res] if len(y)]
+            # try to interpret the content to return a list of values instead
+            # of the XML
+            res = [x for x in self._parametersDetails[
+                parameterId].findAll("value")]
+            res = [y[0].text for y in [
+                x.findAll('label') for x in res] if len(y)]
         except:
             pass
 
         return res
 
-    def run(self, program=None, database=None, sequence=None,stype="protein", email=None, **kargs):
+    def run(self, program=None, database=None, sequence=None, stype="protein", email=None, **kargs):
         """ Submit a job with the specified parameters.
 
         .. python ncbiblast_urllib2.py -D ENSEMBL --email "test@yahoo.com" --sequence
@@ -223,7 +229,8 @@ returns a list of parameters. See :meth:`getParameters`.""")
         """
         # There are compulsary arguments:
         if program is None or sequence is None or database is None or email is None:
-            raise ValueError("program, sequence, email  and database must be provided")
+            raise ValueError(
+                "program, sequence, email  and database must be provided")
 
         checkParam = self.devtools.check_param_in_list
 
@@ -247,12 +254,12 @@ returns a list of parameters. See :meth:`getParameters`.""")
         # is expected.
         for k, v in kargs.items():
             print(k, v)
-            checkParam(v,self.parametersDetails(k))
+            checkParam(v, self.parametersDetails(k))
             params[k] = v
 
         # similarly for the database, we must process it by hand because ther
         # can be more than one database
-        #checkParam(database.lower(), [str(x.replace(" ", "_").lower())
+        # checkParam(database.lower(), [str(x.replace(" ", "_").lower())
         #    for x in self.parametersDetails("database")])
         if isinstance(database, list):
             databases = database[:]
@@ -274,11 +281,10 @@ parser.add_option('--polljob', action="store_true", help='get job result')
 parser.add_option('--status', action="store_true", help='get job status')
 parser.add_option('--resultTypes', action='store_true', help='get result types')
     """
-        res = self.http_post("run/", frmt=None, data=params, 
-                headers={})
+        res = self.http_post("run/", frmt=None, data=params,
+                             headers={})
 
         return res
-
 
     def getStatus(self, jobid):
         """Get status of a submitted job
@@ -297,10 +303,9 @@ parser.add_option('--resultTypes', action='store_true', help='get result types')
 
 
         """
-        url =  'status/' + jobid
+        url = 'status/%s' % jobid
         res = self.http_get(url, frmt="txt")
         return res
-
 
     def getResultTypes(self, jobid):
         """ Get available result types for a finished job.
@@ -313,30 +318,34 @@ parser.add_option('--resultTypes', action='store_true', help='get result types')
             identifier is itself a dictionary containing the label, description,
             file suffix and mediaType of the identifier.
         """
-        if self.getStatus(jobid)!='FINISHED':
-            self.logging.warning("waiting for the job to be finished. May take a while")
+        if self.getStatus(jobid) != 'FINISHED':
+            self.logging.warning(
+                "waiting for the job to be finished. May take a while")
             self.wait(jobid, verbose=False)
         url = 'resulttypes/' + jobid
         res = self.http_get(url, frmt="xml")
         res = self.easyXML(res)
 
         output = {}
-        def myf(x):
-            if len(x)==0: return ""
-            else: return x[0].text
 
-        descriptions = [myf(x.findall("description")) for x in res.getchildren()]
+        def myf(x):
+            if len(x) == 0:
+                return ""
+            else:
+                return x[0].text
+
+        descriptions = [myf(x.findall("description"))
+                        for x in res.getchildren()]
         identifiers = [myf(x.findall("identifier")) for x in res.getchildren()]
         mediaTypes = [myf(x.findall("mediaType")) for x in res.getchildren()]
         labels = [myf(x.findall("label")) for x in res.getchildren()]
         suffixes = [myf(x.findall("fileSuffix")) for x in res.getchildren()]
 
         for i, ident in enumerate(identifiers):
-            output[ident] = {'label':labels[i], 'mediaType': mediaTypes[i],
-                'description':descriptions[i], 'fileSuffix':suffixes[i]}
+            output[ident] = {'label': labels[i], 'mediaType': mediaTypes[i],
+                             'description': descriptions[i], 'fileSuffix': suffixes[i]}
 
         return output
-
 
     # TODO need to check that jobid is finished
     def getResult(self, jobid, resultType):
@@ -346,8 +355,9 @@ parser.add_option('--resultTypes', action='store_true', help='get result types')
         :param str jobid: a job identifier returned by :meth:`run`.
         :param str  resultType: type of result to retrieve. See :meth:`getResultTypes`.
         """
-        if self.getStatus(jobid)!='FINISHED':
-            self.logging.warning("waiting for the job to be finished. May take a while")
+        if self.getStatus(jobid) != 'FINISHED':
+            self.logging.warning(
+                "waiting for the job to be finished. May take a while")
             self.wait(jobid, verbose=False)
         if self.getStatus(jobid) != "FINISHED":
             raise ValueError("job is not finished")
@@ -366,8 +376,9 @@ parser.add_option('--resultTypes', action='store_true', help='get result types')
 
         """
 
-        if checkInterval<1:
-            raise ValueError("checkInterval must be positive and less than minute")
+        if checkInterval < 1:
+            raise ValueError(
+                "checkInterval must be positive and less than minute")
         result = 'PENDING'
         while result == 'RUNNING' or result == 'PENDING':
             result = self.getStatus(jobId)
@@ -377,9 +388,7 @@ parser.add_option('--resultTypes', action='store_true', help='get result types')
                 time.sleep(checkInterval)
         return result
 
-
     def _get_database(self):
         return self.parametersDetails
     databases = property(_get_database,
-        doc=r"""Returns accepted databases. Alias to *parametersDetails('database')*""")
-
+                         doc=r"""Returns accepted databases. Alias to *parametersDetails('database')*""")
